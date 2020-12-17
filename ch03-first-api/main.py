@@ -21,7 +21,7 @@ def index():
 
 
 @api.get('/api/calculate')
-def calculate(x: int, y: int, z: Optional[int] = None):
+def calculate_by_qs(x: int, y: int, z: Optional[int] = None): #pylint: disable=unsubscriptable-object
     if z == 0:
         return fastapi.responses.JSONResponse(
             content={"error": "ERROR: Z cannot be zero."},
@@ -36,7 +36,28 @@ def calculate(x: int, y: int, z: Optional[int] = None):
         'x': x,
         'y': y,
         'z': z,
-        'value': value
+        'operation': 'sum',
+        'result': value,
+    }
+
+@api.get('/api/calculate/{x}/{y}')
+def calculate_by_url(x: int, y: int, z: Optional[int] = None): #pylint: disable=unsubscriptable-object
+    if z == 0:
+        return fastapi.responses.JSONResponse(
+            content={"error": "ERROR: Z cannot be zero."},
+            status_code=400)
+
+    value = x + y
+
+    if z is not None:
+        value /= z
+
+    return {
+        'x': x,
+        'y': y,
+        'z': z,
+        'operation': 'sum',
+        'result': value,
     }
 
 

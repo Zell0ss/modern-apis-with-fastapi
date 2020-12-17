@@ -3,26 +3,12 @@ import datetime
 
 import bs4
 import httpx
-import requests
 from colorama import Fore
 
-# Older versions of python require calling loop.create_task() rather than asyncio.ensure_future.
+# Older versions of python require calling loop.create_task() rather than on asyncio.
 # Make this available more easily.
 global loop
 
-
-# Older sync version
-def get_html_old_version(episode_number: int) -> str:
-    print(Fore.YELLOW + f"Getting HTML for episode {episode_number}", flush=True)
-
-    url = f'https://talkpython.fm/{episode_number}'
-
-    #here is the difference!
-    resp = requests.get(url)
-    resp.raise_for_status()
-
-
-    return resp.text
 
 
 async def get_html(episode_number: int) -> str:
@@ -47,27 +33,6 @@ def get_title(html: str, episode_number: int) -> str:
     return header.text.strip()
 
 
-#older sync version
-async def get_title_range_old_version():
-    # Please keep this range pretty small to not DDoS my site. ;)
-    for n in range(270, 280):
-        html = await get_html(n)
-        title = get_title(html, n)
-        print(Fore.WHITE + f"Title found: {title}", flush=True)
-
-
-async def get_title_range():
-    # Please keep this range pretty small to not DDoS my site. ;)
-
-    tasks = []
-    for n in range(270, 280):
-        tasks.append((n, loop.create_task(get_html(n))))
-
-    for n, t in tasks:
-        html = await t
-        title = get_title(html, n)
-        print(Fore.WHITE + f"Title found: {title}", flush=True)
-
 def main():
     t0 = datetime.datetime.now()
 
@@ -78,5 +43,37 @@ def main():
     dt = datetime.datetime.now() - t0
     print(f"Done in {dt.total_seconds():.2f} sec.")
 
+
+
+async def get_title_range():
+    # Please keep this range pretty small to not DDoS my site. ;)
+
+    tasks = []
+
+    for n in range(270, 280):
+        tasks.append((n, loop.create_task(get_html(n))))
+    
+    # await gather_all (*tasks)
+    await gather_with_concurrency (5,*tasks)
+
+
+async def gather_all(*tasks):
+    for n, t in tasks:
+        html = await t
+        title = get_title(html, n)
+        print(Fore.WHITE + f"Title found: {title}", flush=True)
+
+
+async def gather_with_concurrency(n, *tasks):
+    semaphore = asyncio.Semaphore(n)
+
+    async def sem_task(task):
+        async with semaphore:
+            return await task
+    return await asyncio.gather(*(sem_task(task) for task in tasks))
+
+
 if __name__ == '__main__':
     main()
+
+

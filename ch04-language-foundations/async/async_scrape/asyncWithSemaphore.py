@@ -11,19 +11,6 @@ from colorama import Fore
 global loop
 
 
-# Older sync version
-def get_html_old_version(episode_number: int) -> str:
-    print(Fore.YELLOW + f"Getting HTML for episode {episode_number}", flush=True)
-
-    url = f'https://talkpython.fm/{episode_number}'
-
-    #here is the difference!
-    resp = requests.get(url)
-    resp.raise_for_status()
-
-
-    return resp.text
-
 
 async def get_html(episode_number: int) -> str:
     print(Fore.YELLOW + f"Getting HTML for episode {episode_number}", flush=True)

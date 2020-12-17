@@ -1,0 +1,4 @@
+init-hook='import sys; sys.path.append("E:\\Dropbox\\CODING\\FASTAPI\\modern-apis-with-fastapi\\")'
+disable=
+    unnecessary-pass,
+    line-too-long,

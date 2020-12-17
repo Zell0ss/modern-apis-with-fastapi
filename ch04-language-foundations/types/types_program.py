@@ -3,9 +3,9 @@ from typing import Optional, Iterable
 
 Item = namedtuple("Item", "name, value")
 
-running_max: Optional[int] = None
+running_max: Optional[int] = None #pylint: disable=unsubscriptable-object
 
-
+# defino que items es un iterable de item
 def counter(items: Iterable[Item]) -> int:
     global running_max
 
@@ -13,6 +13,7 @@ def counter(items: Iterable[Item]) -> int:
 
     for i in items:
         total += i.value
+        print(i.name)
 
     if not running_max or total > running_max:
         running_max = total
