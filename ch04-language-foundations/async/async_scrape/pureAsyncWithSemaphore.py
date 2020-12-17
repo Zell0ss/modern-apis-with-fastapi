@@ -6,22 +6,20 @@ import httpx
 import requests
 from colorama import Fore
 
-# Older versions of python require calling loop.create_task() rather than asyncio.ensure_future.
-# Make this available more easily.
-global loop
 
 
 
-async def get_html(episode_number: int) -> str:
+async def get_html(episode_number: int, mySemaphore:asyncio.Semaphore) -> str:
     print(Fore.YELLOW + f"Getting HTML for episode {episode_number}", flush=True)
 
     url = f'https://talkpython.fm/{episode_number}'
+    
+    async with mySemaphore:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
 
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-
-        return resp.text
+    return resp.text
 
 
 def get_title(html: str, episode_number: int) -> str:
@@ -34,33 +32,26 @@ def get_title(html: str, episode_number: int) -> str:
     return header.text.strip()
 
 
-#older sync version
-async def get_title_range_old_version():
-    # Please keep this range pretty small to not DDoS my site. ;)
-    for n in range(270, 280):
-        html = await get_html(n)
-        title = get_title(html, n)
-        print(Fore.WHITE + f"Title found: {title}", flush=True)
-
-
 async def get_title_range():
     # Please keep this range pretty small to not DDoS my site. ;)
 
     tasks = []
+    mySemaphore = asyncio.Semaphore(value=3)
     for n in range(270, 280):
-        tasks.append((n, loop.create_task(get_html(n))))
+        task = {"num":n,"task":asyncio.create_task(get_html(n, mySemaphore))}
+        tasks.append(task)
 
-    for n, t in tasks:
-        html = await t
-        title = get_title(html, n)
+
+    for t in tasks:
+        html = await t["task"]
+        title = get_title(html, t["num"])
         print(Fore.WHITE + f"Title found: {title}", flush=True)
 
 def main():
     t0 = datetime.datetime.now()
 
-    global loop
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(get_title_range())
+    #one shot loop creation
+    asyncio.get_event_loop().run_until_complete(get_title_range())
 
     dt = datetime.datetime.now() - t0
     print(f"Done in {dt.total_seconds():.2f} sec.")
